@@ -1,5 +1,3 @@
-import * as R from 'ramda'
-
 import { readInput } from "../common";
 
 const input = readInput('day1/input.txt')
