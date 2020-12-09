@@ -19,6 +19,7 @@ const ROW_RANGE = { from: 0, to: 127 }
 const COLUMN_RANGE = { from: 0, to: 7 }
 
 const run = () => {
+    const seatIds = []
     let highestSeatId = 0
     for (const line of input) {
         let row = ROW_RANGE
@@ -45,12 +46,22 @@ const run = () => {
         const finalRow = Math.round((row.from + row.to) / 2)
         const finalColumn = Math.round((column.from + column.to) / 2)
         const seatId = finalRow * 8 + finalColumn
+        seatIds.push(seatId)
         if (seatId > highestSeatId) {
             highestSeatId = seatId
         }
     }
 
     console.log('Part 1 solution:', highestSeatId)
+
+    const SMALLEST_SEAT_ID = 1 * 8 + 1
+    const BIGGEST_SEAT_ID = 128 * 8 + 8
+
+    for (let currentSeatId = SMALLEST_SEAT_ID + 1; currentSeatId < BIGGEST_SEAT_ID; currentSeatId++) {
+        if (!seatIds.includes(currentSeatId) && seatIds.includes(currentSeatId - 1) && seatIds.includes(currentSeatId + 1)) {
+            console.log('Part 2 solution:', currentSeatId)
+        }
+    }
 }
 
 run()
