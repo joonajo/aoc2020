@@ -5,17 +5,24 @@ const input = readInput('day8/input.txt')
 type Action = 'nop' | 'acc' | 'jmp'
 
 const Program = input => {
-    const instructions = [...input]
+    const defaultInstructions = [...input]
 
     let running = true
     let currentIndex = 0
     let accumulator = 0
+    let finished = false
 
-    const readInstructionIndexes = []
+    let readInstructionIndexes = []
 
-    const readInstruction = () => {
+    const readNextInstruction = (instructions = defaultInstructions) => {
         if (readInstructionIndexes.includes(currentIndex)) {
-            stopProgram()
+            duplicateInstruction()
+            return
+        }
+
+        if (currentIndex >= instructions.length) {
+            finishProgram()
+            return
         }
 
         readInstructionIndexes.push(currentIndex)
@@ -36,9 +43,6 @@ const Program = input => {
             case 'jmp':
                 jumpInstructions(value)
                 break;
-            default:
-                stopProgram()
-                break;
         }
         
     }
@@ -51,14 +55,69 @@ const Program = input => {
         currentIndex += value
     }
 
-    const stopProgram = () => {
-        running = false
-        console.log('Part 1 solution:', accumulator)
+    const duplicateInstruction = () => {
+        terminate()
     }
 
-    while (running) {
-        readInstruction()
+    const finishProgram = () => {
+        console.log('Finished instructions.')
+        console.log('Accumulator value:', accumulator)
+        terminate()
     }
+
+    const runDefaultInstructions = () => {
+        running = true
+        while (running) {
+            readNextInstruction()
+        }
+    }
+
+    const runWithCustomInstructions = customInstructions => {
+        reset()
+        while (running) {
+            readNextInstruction(customInstructions)
+        }
+    }
+
+    const reset = () => {
+        running = true
+        currentIndex = 0
+        accumulator = 0
+        readInstructionIndexes = []
+    }
+
+    const fixInstructions = () => {        
+        const allNopAndJmpIndexes: number[] = defaultInstructions.reduce((indexes, current, index) => {
+            const action = current.split(' ')[0]
+            if (action === 'jmp' || action === 'nop') {
+                return [...indexes, index]
+            }
+            return [...indexes]
+        }, [])
+
+        allNopAndJmpIndexes.forEach(index => {
+            const oldAction = input[index].split(' ')[0]
+            const newAction = oldAction === 'jmp' ? 'nop' : 'jmp'
+
+            const newInstruction = newAction + ' ' + input[index].split(' ')[1]
+            const newInstructions = [...input]
+            newInstructions[index] = newInstruction
+
+            runWithCustomInstructions(newInstructions)
+        })
+    }
+
+    const terminate = () => {
+        running = false
+    }
+
+    return { fixInstructions, runDefaultInstructions, terminate }
 }
 
-Program(input)
+const partOneProgram = Program(input)
+
+partOneProgram.runDefaultInstructions()
+
+const partTwoProgram = Program(input)
+
+partTwoProgram.fixInstructions()
