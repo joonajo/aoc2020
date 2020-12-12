@@ -8,15 +8,11 @@ const instructions = readInput('day12/input.txt').map(instruction => {
     }
 })
 
-type Instruction = {
-    action: string,
-    amount: number,
-}
 type Forward = 'F'
 type Direction = 'N' | 'E' | 'S' | 'W'
 type Rotate = 'R' | 'L'
-type ShipStatus = {
-    direction: Direction,
+type Status = {
+    direction?: Direction,
     pos: {
         x: number,
         y: number
@@ -24,40 +20,20 @@ type ShipStatus = {
 }
 
 const directions: { [key in Direction]: number[] } = {
-    N: [0, -1],
+    N: [0, 1],
     E: [1, 0],
-    S: [0, 1],
+    S: [0, -1],
     W: [-1, 0],
 }
 
 const directionAmount = Object.keys(directions).length
-const directionKeys: (Direction | Forward)[] = ['N', 'E', 'S', 'W', 'F']
+const directionKeys: Direction[] = ['N', 'E', 'S', 'W']
+const forwardKey: Forward = 'F'
 const rotationKeys: Rotate[] = ['R', 'L']
 
 const directionChange = deg => deg / 90
 
 const NavigationSystem = {
-    readInstruction: (instruction: Instruction, shipStatus: ShipStatus) => {
-        const { action, amount } = instruction
-
-        if (directionKeys.includes(action as (Direction | Forward))) {
-            const newShipPosition = NavigationSystem.calculateNewPosition(action as (Direction | Forward), amount,  shipStatus)
-            return {
-                ...shipStatus,
-                pos: newShipPosition
-            }
-        }
-
-        if (rotationKeys.includes(action as Rotate)) {
-            const newShipDirection = NavigationSystem.calculateNewDirection(shipStatus.direction, action as Rotate, amount)
-            return {
-                ...shipStatus,
-                direction: newShipDirection as Direction
-            }
-        }
-
-        return shipStatus
-    },
     calculateNewDirection: (oldDirection: Direction, rotation: Rotate, degrees: number) => {
         const currentDirectionIndex = Object.keys(directions).indexOf(oldDirection)
         
@@ -73,11 +49,66 @@ const NavigationSystem = {
             return Object.keys(directions)[newDirectionIndex]
         }
     },
-    calculateNewPosition: (direction: Direction | Forward, amount: number, shipStatus: ShipStatus) => {
-        let newPos = shipStatus.pos
+    rotateWaypoint: (status: Status, rotation: Rotate, degrees: number) => {
+        const { x, y } = status.pos
+        const amount = directionChange(degrees)
+
+        if (rotation === 'R') {
+            switch (amount) {
+                case 1:
+                    return {
+                        x: y,
+                        y: x * -1
+                    }
+                case 2:
+                    return {
+                        x: x * -1,
+                        y: y * -1
+                    }
+                case 3:
+                    return {
+                        x: y * -1,
+                        y: x
+                    }
+            }
+        } else {
+            switch (amount) {
+                case 1:
+                    return {
+                        x: y * -1,
+                        y: x
+                    }
+                case 2:
+                    return {
+                        x: x * -1,
+                        y: y * -1
+                    }
+                case 3:
+                    return {
+                        x: y,
+                        y: x * -1
+                    }
+            }
+        }
+    },
+    moveShipForward: (wayPointStatus: Status, shipPos: { x: number, y: number }, amount: number) => {
+        let newShipPos = { ...shipPos }
+        const { pos: wayPointPos } = wayPointStatus 
+        
+        for (let i = 0; i < amount; i++) {
+            newShipPos = {
+                x: newShipPos.x + wayPointPos.x,
+                y: newShipPos.y + wayPointPos.y
+            }
+        }
+
+        return { ...newShipPos }
+    },
+    calculateNewPosition: (direction: Direction | Forward, amount: number, status: Status) => {
+        let newPos = status.pos
 
         if (direction === 'F') {
-            const movement = directions[shipStatus.direction]
+            const movement = directions[status.direction]
             for (let i = 0; i < amount; i++) {
                 newPos = {
                     x: newPos.x + movement[0],
@@ -99,7 +130,7 @@ const NavigationSystem = {
 }
 
 const partOne = () => {
-    let shipStatus: ShipStatus = {
+    let shipStatus: Status = {
         direction: 'E',
         pos: {
             x: 0,
@@ -108,11 +139,62 @@ const partOne = () => {
     }
 
     for (let instruction of instructions) {
-        shipStatus = NavigationSystem.readInstruction(instruction, shipStatus)
+        const { action, amount } = instruction
+        if (directionKeys.includes(action as Direction) || action === forwardKey) {
+            const newShipPosition = NavigationSystem.calculateNewPosition(action as (Direction | Forward), amount,  shipStatus)
+            shipStatus = {
+                ...shipStatus,
+                pos: newShipPosition
+            }
+        } else if (rotationKeys.includes(action as Rotate)) {
+            const newShipDirection = NavigationSystem.calculateNewDirection(shipStatus.direction, action as Rotate, amount)
+            shipStatus = {
+                ...shipStatus,
+                direction: newShipDirection as Direction
+            }
+        }
     }
 
     const manhattanDistance = Math.abs(shipStatus.pos.x) + Math.abs(shipStatus.pos.y)
     console.log('Part 1 solution:', manhattanDistance)
 }
 
+const partTwo = () => {
+    let shipPos = { 
+        x: 0,
+        y: 0,
+    }
+
+    let wayPointStatus: Status = {
+        // Relative position to ship
+        pos: {
+            x: 10,
+            y: 1,
+        }
+    }
+
+    for (let instruction of instructions) {
+        const { action, amount } = instruction
+        
+        if (directionKeys.includes(action as (Direction))) {
+            const newWaypointPos = NavigationSystem.calculateNewPosition(action as Direction, amount,  wayPointStatus)
+            wayPointStatus = {
+                pos: newWaypointPos
+            }
+        } else if (rotationKeys.includes(action as Rotate)) {
+            const newWaypointPos = NavigationSystem.rotateWaypoint(wayPointStatus, action as Rotate, amount)
+            wayPointStatus = {
+                ...wayPointStatus,
+                pos: newWaypointPos
+            }
+        } else if (action === forwardKey) {
+            shipPos = NavigationSystem.moveShipForward(wayPointStatus, shipPos, amount)
+        }
+    }
+
+    const manhattanDistance = Math.abs(shipPos.x) + Math.abs(shipPos.y)
+    console.log('Part 2 solution:', manhattanDistance)
+}
+
 partOne()
+partTwo()
