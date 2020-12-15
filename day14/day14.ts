@@ -49,4 +49,48 @@ const partOne = () => {
     console.log('Part 1 solution:', sum)
 }
 
+const partTwo = () => {
+
+    let memory: { [key: number]: number } = {}
+    let reversedBitmask: string[] = [];
+    const floatingValues: { value: number, address: number }[] = []
+
+    for (let i = 0; i < input.length; i++) {
+        const line = input[i]
+
+        if (line.includes('mask')) {
+            reversedBitmask = Array.from(line).reverse().slice(0, 36)
+        } else {
+            const splitLine = line.split(' = ')
+            const value = parseInt(splitLine[1])
+            const address = parseInt(splitLine[0].slice(splitLine[0].indexOf('[') + 1, splitLine[0].indexOf(']')))
+            const reversedAddressBits = Array.from(address.toString(2)).reverse()
+
+            const diff = reversedBitmask.length - reversedAddressBits.length
+
+            for (let k = 0; k < diff; k++) {
+                reversedAddressBits.push('0')
+            }
+
+            for (let j = 0; j < reversedBitmask.length; j++) {
+                const maskValue = reversedBitmask[j]
+                
+                if (maskValue === '1' || maskValue === 'X') {
+                    reversedAddressBits[j] = maskValue
+                }
+            }
+
+            const floatingBits = reversedAddressBits.filter(bit => bit === 'X').length
+
+            
+        }
+    }
+
+    let sum = 0
+
+    Object.keys(memory).map(key => sum += memory[key])
+    console.log('Part 1 solution:', sum)
+}
+
 partOne()
+partTwo()
